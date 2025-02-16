@@ -21,7 +21,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .WriteTo.Console()
-    .WriteTo.File("logs/app.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("Logs/app.log", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 builder.Host.UseSerilog();
