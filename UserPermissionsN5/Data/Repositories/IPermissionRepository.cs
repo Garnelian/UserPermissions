@@ -4,6 +4,6 @@ namespace UserPermissionsN5.Data.Repositories
 {
     public interface IPermissionRepository : IRepository<Permission>
     {
-        Task<IEnumerable<Permission>> GetPermissionsWithTypesAsync();
+        Task<IEnumerable<Permission>> GetPermissionsWithTypesAsync(int[]? ids = null);
     }
 }

@@ -14,8 +14,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddScoped(typeof(IElasticsearchService<>), typeof(ElasticsearchService<>));
-builder.Services.AddSingleton<KafkaProducerService>();
+builder.Services.AddScoped(typeof(IQueryServerEngine<>), typeof(ElasticsearchService<>));
+builder.Services.AddScoped<IMessageBroker, KafkaProducerService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 Log.Logger = new LoggerConfiguration()
@@ -45,3 +45,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }

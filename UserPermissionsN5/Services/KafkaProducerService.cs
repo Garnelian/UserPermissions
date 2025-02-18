@@ -4,16 +4,16 @@ using UserPermissionsN5.Common;
 
 namespace UserPermissionsN5.Services
 {
-    public class KafkaProducerService
+    public class KafkaProducerService : IMessageBroker
     {
         private readonly string _bootstrapServers;
         private readonly string _topic;
+
         public KafkaProducerService(IConfiguration configuration)
         {
             _bootstrapServers = configuration["Kafka:Host"] ?? Constants.KAFKA_DEFAULT_HOST;
             _topic = configuration["Kafka:Topic"] ?? Constants.KAFKA_DEFAULT_TOPIC;
         }
-
 
         public async Task SendMessageAsync(Guid id, string operation)
         {

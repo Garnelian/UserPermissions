@@ -7,9 +7,10 @@ namespace UserPermissionsN5.Data.Repositories
     {
         public PermissionRepository(ApplicationDbContext context) : base(context) { }
 
-        public async Task<IEnumerable<Permission>> GetPermissionsWithTypesAsync()
+        public async Task<IEnumerable<Permission>> GetPermissionsWithTypesAsync(int[]? ids = null)
         {
-            return await _context.Permission.Include(p=>p.PermissionType).ToListAsync();
+            if (ids != null && ids.Length > 0) return await _context.Permission.Include(p => p.PermissionType).Where(x => ids.Contains(x.Id)).ToListAsync();
+            return await _context.Permission.Include(p => p.PermissionType).ToListAsync();
         }
     }
 }

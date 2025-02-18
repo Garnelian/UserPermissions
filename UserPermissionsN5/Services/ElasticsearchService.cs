@@ -4,7 +4,7 @@ using UserPermissionsN5.Models;
 
 namespace UserPermissionsN5.Services
 {
-    public class ElasticsearchService<T> : IElasticsearchService<T> where T : class
+    public class ElasticsearchService<T> : IQueryServerEngine<T> where T : class
     {
         private readonly ElasticClient _client;
 

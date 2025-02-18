@@ -7,13 +7,13 @@ namespace UserPermissionsN5.Data.UnitOfWork
     {
         private readonly ApplicationDbContext _context;
 
-        public PermissionRepository Permissions { get; }
+        public IPermissionRepository PermissionsRepository { get; }
         public IRepository<PermissionType> PermissionTypes { get; }
 
         public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;
-            Permissions = new PermissionRepository(_context);
+            PermissionsRepository = new PermissionRepository(_context);
             PermissionTypes = new Repository<PermissionType>(_context);
         }
 

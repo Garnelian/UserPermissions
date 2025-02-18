@@ -16,12 +16,15 @@ namespace UserPermissionsN5.Controllers
     [ApiController]
     public class PermissionController : ControllerBase
     {
-        private readonly IElasticsearchService<Permission> _elasticsearchService;
-        private readonly KafkaProducerService _kafkaProducerService;
+        private readonly IQueryServerEngine<Permission> _elasticsearchService;
+        private readonly IMessageBroker _kafkaProducerService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<PermissionController> _logger;
 
-        public PermissionController(IElasticsearchService<Permission> elasticsearchService, IUnitOfWork unitOfWork, ILogger<PermissionController> logger, KafkaProducerService kafkaProducerService)
+        public PermissionController(IQueryServerEngine<Permission> elasticsearchService
+                                    , IUnitOfWork unitOfWork
+                                    , ILogger<PermissionController> logger
+                                    , IMessageBroker kafkaProducerService)
         {
             _elasticsearchService = elasticsearchService;
             _unitOfWork = unitOfWork;
@@ -32,25 +35,33 @@ namespace UserPermissionsN5.Controllers
         [HttpPost("request")]
         public async Task<IActionResult> RequestPermission([FromBody] Permission permission)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
                 _logger.LogInformation("RequestPermission operation executed.");
 
-                await _unitOfWork.Permissions.AddAsync(permission);
+                await _elasticsearchService.IndexDocumentAsync(permission);
+
+                await _unitOfWork.PermissionsRepository.AddAsync(permission);
 
                 await _unitOfWork.CompleteAsync();
 
-                await _elasticsearchService.IndexDocumentAsync(permission);
-
                 await _kafkaProducerService.SendMessageAsync(Guid.NewGuid(), "request");
 
-                return Ok(permission);
+                var storedPermission = await _unitOfWork.PermissionsRepository
+                                      .GetPermissionsWithTypesAsync(new int[] { permission.Id });
+
+                return Ok(storedPermission);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Mesagge:{ex.Message}, StackTrace:{ex.StackTrace}");
 
-                return StatusCode(500, "Server Error");
+                return StatusCode(500, new { Error = "Server Error" });
             }
         }
 
@@ -61,27 +72,31 @@ namespace UserPermissionsN5.Controllers
             {
                 _logger.LogInformation("ModifyPermission operation executed.");
 
-                var permission = await _unitOfWork.Permissions.GetByIdAsync(id);
+                await _elasticsearchService.IndexDocumentAsync(updatedPermission);
+
+                var permission = await _unitOfWork.PermissionsRepository.GetByIdAsync(id);
 
                 if (permission == null) return NotFound();
 
                 permission.EmployeeForeName = updatedPermission.EmployeeForeName;
+                permission.EmployeeSurName = updatedPermission.EmployeeSurName;
                 permission.PermissionTypeId = updatedPermission.PermissionTypeId;
                 permission.PermissionDate = updatedPermission.PermissionDate;
 
                 await _unitOfWork.CompleteAsync();
 
-                await _elasticsearchService.IndexDocumentAsync(permission);
-
                 await _kafkaProducerService.SendMessageAsync(Guid.NewGuid(), "modify");
 
-                return Ok(permission);
+                var storedPermission = await _unitOfWork.PermissionsRepository
+                                      .GetPermissionsWithTypesAsync(new int[] { id });
+
+                return Ok(storedPermission);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Mesagge:{ex.Message}, StackTrace:{ex.StackTrace}");
 
-                return StatusCode(500, "Server Error");
+                return StatusCode(500, new { Error = "Server Error" });
             }
         }
 
@@ -92,7 +107,7 @@ namespace UserPermissionsN5.Controllers
             {
                 _logger.LogInformation("GetPermission operation executed.");
 
-                var permissions = await _unitOfWork.Permissions.GetPermissionsWithTypesAsync();
+                var permissions = await _unitOfWork.PermissionsRepository.GetPermissionsWithTypesAsync();
 
                 await _kafkaProducerService.SendMessageAsync(Guid.NewGuid(), "get");
 
@@ -102,7 +117,7 @@ namespace UserPermissionsN5.Controllers
             {
                 _logger.LogError($"Mesagge:{ex.Message}, StackTrace:{ex.StackTrace}");
 
-                return StatusCode(500, "Server Error");
+                return StatusCode(500, new { Error = "Server Error" });
             }
         }
     }
